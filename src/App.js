@@ -1,4 +1,3 @@
-// import logo from './logo.svg';
 import { useEffect, useState, useReducer } from "react";
 import "./App.css";
 import BoxEspecialidad from "./components/BoxEspecialidad";
@@ -14,31 +13,31 @@ function reducer(state, action) {
     case "fetchApi":
       return {
         ...state,
-        profesionales: action.profesionales,
-        copiaProfesionales: action.profesionales,
+        profesionales: action.data,
+        copiaProfesionales: action.data,
       };
     case "especialidades":
-      let filtrarEspecialidad = [];
-      state.profesionales.map((p) => {
-        //pushes only unique element
-        if (!filtrarEspecialidad.includes(p.especialidad)) {
-          filtrarEspecialidad.push(p.especialidad);
-        }
-        return filtrarEspecialidad;
-      });
-      return { ...state, especialidades: filtrarEspecialidad };
+      let especialidadesLimpias = Array.from(new Set(state.copiaProfesionales.map(e => e.especialidad)))
+      //   //pushes only unique element
+      //   // let especialidadesLimpias = [];
+      //   // state.copiaProfesionales.map((p) => {
+      //   //   //pushes only unique element
+      //   //   if (!especialidadesLimpias.includes(p.especialidad)) {
+      //   //     especialidadesLimpias.push(p.especialidad);
+      //   //   }
+      console.log(state)
+      return { ...state, especialidades: especialidadesLimpias };
 
     case "filtrar":
-      let buscadosInputs = state.copiaProfesionales.filter(
-        (e) =>
-          e.especialidad.toLowerCase().includes(action.buscar.toLowerCase()) ||
-          e.nombre.toLowerCase().includes(action.buscar.toLowerCase())
-      );
+      let buscadosInputs = state.copiaProfesionales.filter((e) => e.nombre.toLowerCase().includes(action.buscar.toLowerCase()));
+
+      let newCategorias = buscadosInputs.map(e => e.especialidad)
       console.log("filtrados ", buscadosInputs);
       console.log("action ", action.buscar);
       return {
         ...state,
         profesionales: buscadosInputs,
+        especialidades: newCategorias
       };
     default:
       return {
@@ -50,22 +49,25 @@ function reducer(state, action) {
 
 function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
-
   const [search, setSearch] = useState("");
   const [selectEspecialidades, setSelectEspecialidades] = useState("");
 
   let url = "https://clinicasanjorge.panalsoft.com/profesionales.json";
 
+  // ******************
+  // Fetching data
   useEffect(() => {
     fetch(url)
       .then((res) => res.json())
       .then((prof) => {
-        dispatch({ type: "fetchApi", profesionales: prof });
+        dispatch({ type: "fetchApi", data: prof });
         dispatch({ type: "especialidades" });
       })
       .catch((err) => console.log(err.message));
   }, []);
 
+  // ******************
+  // Handlers
   function handleChangeInput(e) {
     setSearch(e.target.value);
     console.log(search);
@@ -73,14 +75,19 @@ function App() {
 
   function handleChangeSelect(e) {
     setSelectEspecialidades(e.target.value);
-    console.log(selectEspecialidades);
+    dispatch({ type: "filtrar", buscar: selectEspecialidades });
+    console.log(state);
   }
 
   function handleClick(e) {
     e.preventDefault();
     dispatch({ type: "filtrar", buscar: search });
+    console.log(state)
   }
 
+
+  // ******************
+  // Render component
   return (
     <div className="container">
       <h2> Profesionales</h2>
